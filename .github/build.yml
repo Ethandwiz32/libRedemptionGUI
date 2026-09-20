@@ -1,0 +1,41 @@
+name: Build libRedmptionGUI.so
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:   # lets you trigger it manually from GitHub UI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Android NDK r25c
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          add-to-path: true
+
+      - name: Build with ndk-build
+        run: |
+          ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=jni/Android.mk
+
+      - name: Strip debug symbols
+        run: |
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip \
+            --strip-all libs/arm64-v8a/libRedmptionGUI.so
+
+      - name: Zip the .so
+        run: |
+          cd libs/arm64-v8a
+          zip libRedmptionGUI.zip libRedmptionGUI.so
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libRedmptionGUI
+          path: libs/arm64-v8a/libRedmptionGUI.zip
+          retention-days: 7
