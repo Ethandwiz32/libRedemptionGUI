@@ -3,7 +3,7 @@ name: Build libRedmptionGUI.so
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:   # lets you trigger it manually from GitHub UI
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,21 +21,26 @@ jobs:
 
       - name: Build with ndk-build
         run: |
-          ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=jni/Android.mk
+          $ANDROID_NDK_HOME/ndk-build \
+            NDK_PROJECT_PATH=$GITHUB_WORKSPACE \
+            APP_BUILD_SCRIPT=$GITHUB_WORKSPACE/jni/Android.mk \
+            NDK_APPLICATION_MK=$GITHUB_WORKSPACE/jni/Application.mk \
+            NDK_OUT=$GITHUB_WORKSPACE/obj \
+            NDK_LIBS_OUT=$GITHUB_WORKSPACE/libs
 
       - name: Strip debug symbols
         run: |
           $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip \
-            --strip-all libs/arm64-v8a/libRedmptionGUI.so
+            --strip-all $GITHUB_WORKSPACE/libs/arm64-v8a/libRedmptionGUI.so
 
       - name: Zip the .so
         run: |
-          cd libs/arm64-v8a
+          cd $GITHUB_WORKSPACE/libs/arm64-v8a
           zip libRedmptionGUI.zip libRedmptionGUI.so
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: libRedmptionGUI
-          path: libs/arm64-v8a/libRedmptionGUI.zip
+          path: ${{ github.workspace }}/libs/arm64-v8a/libRedmptionGUI.zip
           retention-days: 7
